@@ -97,7 +97,7 @@
                     </div>
 
                     <span class="nav-title py-0" v-else>
-                        <div v-if="winner.length" class="edaem">{{ winner }}</div>
+                        <div v-if="winner.length" class="edaem">{{ winnerData }}</div>
                         <i v-else class="material-icons">donut_large</i>
                     </span>
                     <div class="row" v-if="socket">
@@ -213,7 +213,8 @@
 
         <div v-if="socket && !loading" class="fixed-action-btn">
             <a v-on:click="changePerspective({ username })"
-                class="waves-effect waves-light btn-floating btn-disabled orange">
+                class="waves-effect waves-light btn-floating btn-disabled orange tooltipped"
+                data-position="top" v-bind:data-tooltip="toolTipData">
                 <i class="large material-icons">visibility</i>
             </a>
             <span class="box-flying">{{ spectators.length || 0 }}</span>
@@ -227,26 +228,26 @@
     const app = new Vue({
         el: '#app',
         data: {
-            timeout: 2000,
             loading: false,
             admin: false,
             perspective: false,
             reveal: false,
-            title: 'Planning Poker',
-            history: null,
-            winner: null,
-            username: '',
-            points: 0,
-            scores: [],
-            spectators: [],
             completedScores: false,
             visibility: false,
             delete_forever: false,
             emojis: false,
+            scores: [],
+            spectators: [],
+            points: 0,
+            history: null,
+            winner: null,
             socket: null,
+            username: '',
             session: '',
+            timeout: 2000,
+            title: 'Planning Poker',
             server: 'devstrauss-data-sockets-service-planning-poker',
-            host: 'https://planning-poker-api-production-acf0.up.railway.app',
+            host: 'http://localhost:3000',
             jsConfetti: new JSConfetti(),
             blueColor: 'background: #4a72be; background-image: linear-gradient(to top, #4a72be 0%, #224574 100%);',
             tealColor: 'background: #0ba360; background-image: linear-gradient(to top, #0ba360 0%, #3cba92 100%);'
@@ -404,7 +405,7 @@
                                 this.jsConfetti.addConfetti({
                                     emojis: [scoresObject.emojis],
                                     confettiRadius: Math.floor(Math.random() * 100), // Min: 0, Max: 100,
-                                    emojiSize: Math.floor(Math.random() * 100) + 25, // Min: 25, Max: 100
+                                    emojiSize: Math.floor(Math.random() * 100) + 50, // Min: 50, Max: 100
                                     confettiNumber: Math.floor(Math.random() * 4) + 1, // Min: 1, Max: 5
                                     
                                 })
@@ -429,6 +430,19 @@
             },
             logout() {
                 this.socket.close()
+                this.loading = false
+                this.admin = false
+                this.perspective = false
+                this.reveal = false
+                this.completedScores = false
+                this.visibility = false
+                this.delete_forever = false
+                this.emojis = false
+                this.scores = []
+                this.spectators = []
+                this.points = 0
+                this.history = null
+                this.winner = null
                 this.socket = null
             },
             copyLink() {
@@ -444,12 +458,22 @@
         },
         mounted() {
             M.updateTextFields()
-            document.querySelector('emoji-picker').addEventListener('emoji-click', _ => {
-                this.sendData({ type: 'emojis', emojis: _.detail.unicode }, null, null)
-            });
+            document.querySelector('emoji-picker').addEventListener('emoji-click', data => {
+                this.sendData({ type: 'emojis', emojis: data.detail.unicode }, null, null)
+            })
+        },
+        computed: {
+            winnerData() {
+                return `( ${ this.winner.map(points => points).join(' | ') } )`
+            },
+            toolTipData() {
+                return this.spectators.map(player => player.username).join('<br>')
+            }
         },
         updated() {
             M.updateTextFields()
+            const tooltippedElems = document.querySelectorAll('.tooltipped')
+            M.Tooltip.init(tooltippedElems)
         }
     })
 </script>
