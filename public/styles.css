@@ -32,6 +32,10 @@ emoji-picker {
     --num-columns: 8;
 }
 
+.brand-logo {
+    font-size: 2rem !important;
+}
+
 .bold { 
     font-weight: bold !important;
 }
@@ -84,15 +88,15 @@ emoji-picker {
 }
 
 .admin-options:nth-child(1) {
-    top: 0px;
+    top: -40px;
 }
 
 .admin-options:nth-child(2) {
-    top: 50px;
+    top: 10px;
 }
 
 .admin-options:nth-child(3) {
-    top: 100px;
+    top: 60px;
 }
 
 .session-btn {
