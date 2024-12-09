@@ -412,7 +412,7 @@ const SOCKET = {
             spectators: array.spectators,
             ...STORE.getConfigurationsInCacheStorage(session)
         })
-        WSAUX = null;
+        WSAUX = null
     },
 
     separateUsers: (users: Array<any>) => {

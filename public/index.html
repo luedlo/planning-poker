@@ -100,7 +100,7 @@
                         <div v-if="winner.length" class="edaem">{{ winnerData }}</div>
                         <i v-else class="material-icons">donut_large</i>
                     </span>
-                    <div class="row" v-if="socket">
+                    <div class="row" v-if="socket && !loading">
                         <div class="input-field col s10 m10 offset-s1 offset-m1">
                             <i class="material-icons prefix">featured_play_list</i>
                             <textarea id="server" type="text" class="materialize-textarea" v-model="history" v-on:change="changeHistory" v-if="admin"></textarea>
