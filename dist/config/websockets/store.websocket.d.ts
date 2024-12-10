@@ -5,7 +5,7 @@ declare const SOCKET: {
     sendData: (client: Socket, payload: any, server: Server) => Promise<void>;
     changePerspective: (client: Socket, server: Server, user: any) => void;
     makeSuperUser: (client: Socket, server: Server, user: any) => void;
-    changeHistory: (client: Socket, server: Server, { history }: any) => void;
+    changeIssues: (client: Socket, server: Server, { issues }: any) => void;
     saveScores: (client: Socket, server: Server, { points, ws }: any) => void;
     revealScores: (client: Socket, server: Server) => void;
     clearScores: (client: Socket, server: Server, action: string) => void;

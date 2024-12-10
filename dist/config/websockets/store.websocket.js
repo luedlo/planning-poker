@@ -27,8 +27,8 @@ const SOCKET = {
                     SOCKET.saveScores(client, server, payload.user);
                     break;
                 }
-                case 'history': {
-                    SOCKET.changeHistory(client, server, payload.user);
+                case 'issues': {
+                    SOCKET.changeIssues(client, server, payload.user);
                     break;
                 }
                 case 'reveal': {
@@ -82,7 +82,7 @@ const SOCKET = {
                     visibility: false,
                     delete_forever: false,
                     winner: null,
-                    history: null
+                    issues: null
                 });
             }
             else {
@@ -91,7 +91,7 @@ const SOCKET = {
                     visibility: SOCKET.completedScores(client),
                     delete_forever: false,
                     winner: null,
-                    history: configurations.history
+                    issues: configurations.issues
                 });
             }
             const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
@@ -130,7 +130,7 @@ const SOCKET = {
             });
         }
     },
-    changeHistory: (client, server, { history }) => {
+    changeIssues: (client, server, { issues }) => {
         const { session } = client.handshake.headers;
         const configurations = STORE.getConfigurationsInCacheStorage(session);
         if (configurations) {
@@ -139,7 +139,7 @@ const SOCKET = {
                 visibility: SOCKET.completedScores(client),
                 delete_forever: false,
                 winner: null,
-                history
+                issues
             });
         }
         const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
@@ -158,7 +158,7 @@ const SOCKET = {
                 visibility: SOCKET.completedScores(client),
                 delete_forever: false,
                 winner: null,
-                history: configurations.history
+                issues: configurations.issues
             });
         }
         const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
@@ -173,7 +173,7 @@ const SOCKET = {
                 visibility: false,
                 delete_forever: true,
                 winner: SOCKET.winner(client),
-                history: configurations.history
+                issues: configurations.issues
             });
         }
         const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
@@ -191,7 +191,7 @@ const SOCKET = {
                 visibility: false,
                 delete_forever: false,
                 winner: null,
-                history: configurations.history
+                issues: configurations.issues
             });
         }
         const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
@@ -296,7 +296,7 @@ const SOCKET = {
                     visibility: false,
                     delete_forever: false,
                     winner: null,
-                    history: null
+                    issues: null
                 });
             }
             else {
@@ -305,7 +305,7 @@ const SOCKET = {
                     visibility: SOCKET.completedScores(client),
                     delete_forever: false,
                     winner: null,
-                    history: configurations.history
+                    issues: configurations.issues
                 });
             }
             const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
@@ -336,7 +336,7 @@ const SOCKET = {
                     visibility: false,
                     delete_forever: false,
                     winner: null,
-                    history: null
+                    issues: null
                 });
             }
             else {
@@ -345,7 +345,7 @@ const SOCKET = {
                     visibility: SOCKET.completedScores(client),
                     delete_forever: false,
                     winner: null,
-                    history: configurations.history
+                    issues: configurations.issues
                 });
             }
         }

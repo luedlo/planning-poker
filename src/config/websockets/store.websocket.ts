@@ -29,8 +29,8 @@ const SOCKET = {
                     SOCKET.saveScores(client, server, payload.user)
                     break
                 }
-                case 'history': {
-                    SOCKET.changeHistory(client, server, payload.user)
+                case 'issues': {
+                    SOCKET.changeIssues(client, server, payload.user)
                     break
                 }
                 case 'reveal': {
@@ -85,7 +85,7 @@ const SOCKET = {
                     visibility: false,
                     delete_forever: false,
                     winner: null,
-                    history: null
+                    issues: null
                 })
             } else {
                 STORE.setConfigurationsInCacheStorage(session, {
@@ -93,7 +93,7 @@ const SOCKET = {
                     visibility: SOCKET.completedScores(client),
                     delete_forever: false,
                     winner: null,
-                    history: configurations.history
+                    issues: configurations.issues
                 })
             }
 
@@ -148,7 +148,7 @@ const SOCKET = {
         }
     },
 
-    changeHistory: (client: Socket, server: Server, { history }: any) => {
+    changeIssues: (client: Socket, server: Server, { issues }: any) => {
         const { session } : any = client.handshake.headers
         const configurations: any = STORE.getConfigurationsInCacheStorage(session)
         if (configurations) {
@@ -157,7 +157,7 @@ const SOCKET = {
                 visibility: SOCKET.completedScores(client),
                 delete_forever: false,
                 winner: null,
-                history
+                issues
             })
         }
 
@@ -183,7 +183,7 @@ const SOCKET = {
                 visibility: SOCKET.completedScores(client),
                 delete_forever: false,
                 winner: null,
-                history: configurations.history
+                issues: configurations.issues
             })
         }
 
@@ -204,7 +204,7 @@ const SOCKET = {
                 visibility: false,
                 delete_forever: true,
                 winner: SOCKET.winner(client),
-                history: configurations.history
+                issues: configurations.issues
             })
         }
         const array: any = SOCKET.separateUsers(STORE.getUserInCacheStorage(session))
@@ -227,7 +227,7 @@ const SOCKET = {
                 visibility: false,
                 delete_forever: false,
                 winner: null,
-                history: configurations.history
+                issues: configurations.issues
             })
         }
         
@@ -343,7 +343,7 @@ const SOCKET = {
                     visibility: false,
                     delete_forever: false,
                     winner: null,
-                    history: null
+                    issues: null
                 })
             } else {
                 STORE.setConfigurationsInCacheStorage(session, {
@@ -351,7 +351,7 @@ const SOCKET = {
                     visibility: SOCKET.completedScores(client),
                     delete_forever: false,
                     winner: null,
-                    history: configurations.history
+                    issues: configurations.issues
                 })
             }
             
@@ -387,7 +387,7 @@ const SOCKET = {
                     visibility: false,
                     delete_forever: false,
                     winner: null,
-                    history: null
+                    issues: null
                 })
             } else {
                 STORE.setConfigurationsInCacheStorage(session, {
@@ -395,7 +395,7 @@ const SOCKET = {
                     visibility: SOCKET.completedScores(client),
                     delete_forever: false,
                     winner: null,
-                    history: configurations.history
+                    issues: configurations.issues
                 })
             }
         } else {

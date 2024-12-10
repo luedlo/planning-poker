@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> -->
-    <script src="https://unpkg.com/vue@2/dist/vue.min.js"></script> 
+    <script src="https://unpkg.com/vue@2/dist/vue.min.js"></script>
     <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"
         integrity="sha384-KAZ4DtjNhLChOB/hxXuKqhMLYvx3b5MlT55xPEiNmREKRzeEm+RVPlTnAn0ajQNs"
         crossorigin="anonymous"></script>
@@ -36,13 +36,22 @@
         <main>
             <nav class="nav-extended blue">
                 <div class="nav-wrapper">
-                    <a href="" class="brand-logo">{{ title }}</a>
+                    <a class="brand-logo center">{{ title }}</a>
                     <ul class="right" v-if="socket && !loading">
+
+                        <!-- Desktop Begin -->
                         <li v-if="socket" class="hide-on-med-and-down session-btn">
-                            <a class="waves-effect waves-light" v-on:click="logout()">
+                            <a class="waves-effect waves-light">
                                 <i class="material-icons left">computer</i>{{ session }}
                             </a>
                         </li>
+
+                        <li v-if="socket" class="hide-on-med-and-down issues-btn">
+                            <a class="waves-effect waves-light modal-trigger" href="#modalIssues">
+                                <i class="material-icons left">featured_play_list</i>Issues
+                            </a>
+                        </li>
+
                         <li class="hide-on-med-and-down exit-btn">
                             <a class="waves-effect waves-light" v-on:click="logout()">
                                 <i class="material-icons right">exit_to_app</i>Logout
@@ -53,27 +62,37 @@
                                 <i class="material-icons right">share</i>Share
                             </a>
                         </li>
+                        <!-- Desktop End -->
+
+                        <!-- Mobile Begin -->
                         <li v-if="socket" class="hide-on-med-and-up show-on-medium-and-down session-btn">
-                            <a class="waves-effect waves-light" v-on:click="logout()">
-                                <i class="material-icons left">computer</i>{{ session }}
+                            <a class="waves-effect waves-light">
+                                <i class="material-icons">computer</i>
+                            </a>
+                        </li>
+                        <li v-if="socket" class="hide-on-med-and-up show-on-medium-and-down issues-btn">
+                            <a class="waves-effect waves-light modal-trigger" href="#modalIssues">
+                                <i class="material-icons">featured_play_list</i>
                             </a>
                         </li>
                         <li class="hide-on-med-and-up show-on-medium-and-down exit-btn">
                             <a class="waves-effect waves-light" v-on:click="logout()">
-                                <i class="material-icons right">exit_to_app</i>
+                                <i class="material-icons">exit_to_app</i>
                             </a>
                         </li>
                         <li class="hide-on-med-and-up show-on-medium-and-down">
                             <a class="waves-effect waves-light share-btn" v-on:click="copyLink()">
-                                <i class="material-icons right">share</i>
+                                <i class="material-icons">share</i>
                             </a>
                         </li>
+                        <!-- Mobile End -->
                     </ul>
                 </div>
                 <div class="nav-content center">
+                    <!-- Login Begin -->
                     <div class="row" v-if="!socket || loading">
                         <form class="col s12 m12">
-                            <div class="row">
+                            <div class="row mb-0">
                                 <div class="input-field col s12 m6 mt-1">
                                     <i class="material-icons prefix">computer</i>
                                     <input id="server" type="text" class="validate" v-model="session">
@@ -95,37 +114,42 @@
                             </div>
                         </form>
                     </div>
+                    <!-- Login End -->
 
+                    <!-- Header Begin-->
                     <span class="nav-title py-0" v-else>
                         <div v-if="winner.length" class="edaem">{{ winnerData }}</div>
                         <i v-else class="material-icons">donut_large</i>
                     </span>
                     <div class="row" v-if="socket && !loading">
                         <div class="input-field col s10 m10 offset-s1 offset-m1">
-                            <i class="material-icons prefix">featured_play_list</i>
-                            <textarea id="server" type="text" class="materialize-textarea" v-model="history" v-on:change="changeHistory" v-if="admin"></textarea>
-                            <textarea id="server" type="text" class="materialize-textarea" v-model="history" v-else readonly disabled></textarea>
-                            <label for="server">{{ history ? "Issue" : "Waiting for a issue..." }}</label>
+                            <h4 v-if="issues">Issue</h4>
+                            <h4 v-else>Waiting for a issue...</h4>
                         </div>
                     </div>
                     <a v-if="socket && !loading && admin"
                         class="btn-floating btn-large halfway-fab waves-effect waves-light left"
-                        v-on:click="revealScores({ ws})" v-bind:disabled="!visibility || !scores.length || !scores.length">
+                        v-on:click="revealScores({ ws})"
+                        v-bind:disabled="!visibility || !scores.length || !scores.length">
                         <i class="material-icons">3d_rotation</i>
                     </a>
                     <a v-if="socket && !loading && admin"
                         class="btn-floating btn-large halfway-fab waves-effect waves-light right"
-                        v-on:click="clearScores({ ws })" v-bind:disabled="(!delete_forever && !visibility) || !scores.length">
+                        v-on:click="clearScores({ ws })"
+                        v-bind:disabled="(!delete_forever && !visibility) || !scores.length">
                         <i class="material-icons">delete_forever</i>
                     </a>
+                    <!-- Header End -->
                 </div>
             </nav>
 
             <div class="container center main-div">
                 <div class="row card-score" v-if="socket && !loading">
 
+                    <!-- Scores Begin -->
                     <transition-group v-if="scores.length" name="player">
-                        <div class="col xl2 l2 m2 s6 center flip-card" v-for="(score, index) in scores" v-bind:key="index+1">
+                        <div class="col xl2 l2 m2 s6 center flip-card" v-for="(score, index) in scores"
+                            v-bind:key="index+1">
                             <p class="z-depth-3">
                             <div class="flip-card">
                                 <div class="flip-card-inner" v-bind:class="{'reveal' : reveal}">
@@ -153,25 +177,32 @@
                             </p>
                         </div>
                     </transition-group>
+                    <!-- Scores End -->
 
+                    <!-- Empty Begin -->
                     <div class="greetings center" v-else>
                         <i class="material-icons large grey-text">sentiment_neutral</i>
                         <h4 class="grey-text">There are no players here!</h4>
                     </div>
+                    <!-- Empty End -->
 
                 </div>
 
+                <!-- Greetings Begin -->
                 <div class="greetings center" v-else>
                     <i class="material-icons large grey-text">pan_tool</i>
                     <h4 class="grey-text">Welcome!</h4>
                 </div>
+                <!-- Greetings End -->
             </div>
         </main>
 
         <footer class="page-footer red">
             <div class="container">
+                <!-- Footer Begin -->
                 <div class="row center" v-if="socket && !loading">
-                    <h5 class="truncate mx-0">{{ admin ? '(⭐)' : '' }} {{ perspective ? `(🃏) ${username}` : `(👁️) ${username}`}}</h5>
+                    <h5 class="truncate mx-0">{{ admin ? '(⭐)' : '' }} {{ perspective ? `(🃏) ${username}` : `(👁️)
+                        ${username}`}}</h5>
                 </div>
                 <div class="row center" v-if="socket && !loading && perspective">
                     <a class="waves-effect waves-light btn-large btn-options" :style="dynamicStyle(1)"
@@ -194,30 +225,69 @@
                 <div class="row center" v-if="!socket || loading">
                     <h4>Join a server to get started!</h4>
                 </div>
+                <!-- Footer End -->
             </div>
         </footer>
 
+        <!-- Emojis Begin -->
         <emoji-picker v-show="emojis" class="dark" emoji-version="15.0"></emoji-picker>
 
         <div v-if="socket && !loading" class="fixed-action-btn left">
-            <a v-on:click="emojis = !emojis"
-                class="waves-effect waves-light btn-floating btn-disabled pink">
+            <a v-on:click="emojis = !emojis" class="waves-effect waves-light btn-floating btn-disabled pink">
                 <i class="large material-icons">insert_emoticon</i>
             </a>
         </div>
+        <!-- Emojis End -->
 
+        <!-- Spectator Begin -->
         <div v-if="socket && !loading" class="fixed-action-btn">
             <a v-show="!spectators.length" v-on:click="changePerspective({ ws })"
                 class="waves-effect waves-light btn-floating btn-disabled orange">
                 <i class="large material-icons">visibility</i>
             </a>
             <a v-show="spectators.length" v-on:click="changePerspective({ ws })"
-                class="waves-effect waves-light btn-floating btn-disabled orange tooltipped"
-                data-position="top" v-bind:data-tooltip="toolTipData">
+                class="waves-effect waves-light btn-floating btn-disabled orange tooltipped" data-position="top"
+                v-bind:data-tooltip="toolTipData">
                 <i class="large material-icons">visibility</i>
             </a>
             <span class="box-flying">{{ spectators.length || 0 }}</span>
         </div>
+        <!-- Spectator End -->
+
+        <!-- Modal Begin -->
+        <div id="modalIssues" class="modal bottom-sheet brown">
+            <div class="modal-content">
+                <h4 class="header white-text">
+                    Issues List
+                    <a class="waves-effect waves-light btn blue right">
+                        <i class="material-icons left">add</i>New Issue
+                    </a>
+                </h4>
+                <ul class="collection">
+
+                    <li class="collection-item avatar white-text teal">
+                        <i class="circle blue">1</i>
+                        <h5 class="large">History User - 1</h5>
+                        <h6 class="bold">0 points</h6>
+                        <a class="secondary-content waves-effect waves-light btn-floating red">
+                            <i class="material-icons">close</i>
+                        </a>
+                    </li>
+
+                    <li class="collection-item avatar">
+                        <i class="circle blue">2</i>
+                        <h5 class="large">History User - 2</h5>
+                        <h6 class="bold">0 points</h6>
+                        <a class="secondary-content waves-effect waves-light btn-floating red">
+                            <i class="material-icons">close</i>
+                        </a>
+                    </li>
+
+                </ul>
+            </div>
+        </div>
+        <!-- Modal End -->
+
     </div>
 </body>
 
@@ -238,7 +308,7 @@
             scores: [],
             spectators: [],
             points: 0,
-            history: null,
+            issues: null,
             winner: null,
             socket: null,
             ws: null,
@@ -247,16 +317,16 @@
             timeout: 2000,
             title: 'Planning Poker',
             server: 'devstrauss-data-sockets-service-planning-poker',
-            // host: 'http://192.168.1.6:3000',
+            // host: 'http://localhost:3000',
             host: 'https://planning-poker-api.up.railway.app',
             jsConfetti: new JSConfetti()
         },
         methods: {
-            sendData({ action, user}, points) {
+            sendData({ action, user }, points) {
                 if (this.socket) {
                     this.points = points
                     let data = null
-                    
+
                     if (action === 'save' && this.validateInputPoints()) {
                         data = {
                             action,
@@ -279,7 +349,7 @@
                 this.reveal = data.reveal
                 this.visibility = data.visibility
                 this.delete_forever = data.delete_forever
-                this.history = data.history
+                this.issues = data.issues
                 this.points = (data.winner || []).length || data.action === 'clear' ? 0 : this.points
                 this.winner = (data.winner || []).map(points => {
                     return this.resolvePoints(points)
@@ -322,10 +392,10 @@
                 this.sendData({ action: 'perspective', user }, null)
             },
             makeAdmin(user) {
-                this.sendData({ action: 'admin', user}, null)
+                this.sendData({ action: 'admin', user }, null)
             },
-            changeHistory() {
-                this.sendData({ action: 'history', user: { ws: this.ws, history: this.history}}, null)
+            changeIssues() {
+                this.sendData({ action: 'issues', user: { ws: this.ws, issues: this.issues } }, null)
             },
             resolvePoints(points) {
                 switch (points) {
@@ -365,7 +435,7 @@
                         }
                     }
                     setTimeout(() => {
-                        this.socket = io(this.host, socketOptions)                        
+                        this.socket = io(this.host, socketOptions)
                         this.socket.on(this.session, (response) => {
                             this.loading = false
 
@@ -397,7 +467,7 @@
                                     confettiRadius: Math.floor(Math.random() * 100), // Min: 0, Max: 100,
                                     emojiSize: Math.floor(Math.random() * 100) + 50, // Min: 50, Max: 100
                                     confettiNumber: Math.floor(Math.random() * 4) + 1, // Min: 1, Max: 5
-                                    
+
                                 })
                             } else {
                                 this.receivedScores(response)
@@ -435,7 +505,7 @@
                 this.scores = []
                 this.spectators = []
                 this.points = 0
-                this.history = null
+                this.issues = null
                 this.winner = null
                 this.socket = null
                 this.ws = null
@@ -453,23 +523,24 @@
         },
         mounted() {
             M.updateTextFields()
+            M.Modal.init(document.querySelectorAll('.modal'), {})
             document.querySelector('emoji-picker').addEventListener('emoji-click', data => {
-                this.sendData({ action: 'emojis', user: { ws: this.ws, emojis: data.detail.unicode }}, null)
+                this.sendData({ action: 'emojis', user: { ws: this.ws, emojis: data.detail.unicode } }, null)
             })
         },
         computed: {
-            dynamicStyle() { 
-                return (points) => { 
-                    return { 
-                        background: this.points === points ? '#4a72be' : '#0ba360', 
-                        backgroundImage: this.points === points ? 
+            dynamicStyle() {
+                return (points) => {
+                    return {
+                        background: this.points === points ? '#4a72be' : '#0ba360',
+                        backgroundImage: this.points === points ?
                             'linear-gradient(to top, #4a72be 0%, #224574 100%)' : 'linear-gradient(to top, #0ba360 0%, #3cba92 100%)'
                     }
                 }
             }
             ,
             winnerData() {
-                return `( ${ this.winner.map(points => points).join(' | ') } )`
+                return `( ${this.winner.map(points => points).join(' | ')} )`
             },
             toolTipData() {
                 return this.spectators.map(player => player.admin ? `⭐ ${player.username}` : `👁️ ${player.username}`).join('<br>')
@@ -477,8 +548,7 @@
         },
         updated() {
             M.updateTextFields()
-            const tooltippedElems = document.querySelectorAll('.tooltipped')
-            M.Tooltip.init(tooltippedElems)
+            M.Tooltip.init(document.querySelectorAll('.tooltipped'))
         }
     })
 </script>

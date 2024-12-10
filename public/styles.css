@@ -23,6 +23,10 @@ p {
     font-size: 13px !important;
 }
 
+h4 {
+    margin: 10px 0px !important;
+}
+
 emoji-picker {
     right: 0;
     bottom: 80px;
@@ -30,6 +34,27 @@ emoji-picker {
     position: fixed;
     --num-groups: 9;
     --num-columns: 8;
+}
+
+.mb-0 {
+    margin-bottom: 0px !important;
+}
+
+.collection-item {
+    cursor: pointer;
+    transition: cubic-bezier(0.075, 0.82, 0.165, 1) 0.5s;
+}
+
+.collection-item:hover {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.collection-item h5, .collection-item h6 {
+    margin-top: 0px !important;
+}
+
+i.circle {
+    font-style: normal !important;
 }
 
 .brand-logo {
@@ -100,6 +125,11 @@ emoji-picker {
 }
 
 .session-btn {
+    position: absolute !important;
+    left: 20px;
+}
+
+.issues-btn {
     position: absolute !important;
     top: 60px;
     left: 20px;
