@@ -123,17 +123,18 @@
                     </span>
                     <div class="row" v-if="socket && !loading">
                         <div class="input-field col s10 m10 offset-s1 offset-m1">
-                            <h4 v-if="issues">Issue</h4>
-                            <h4 v-else>Waiting for a issue...</h4>
+                            <h5 v-if="issues.selected">{{ issuesData }}
+                            </h5>
+                            <h5 v-else>Waiting for a issue...</h5>
                         </div>
                     </div>
-                    <a v-if="socket && !loading && admin"
+                    <a v-if="socket && !loading && admin && issues.selected"
                         class="btn-floating btn-large halfway-fab waves-effect waves-light left"
                         v-on:click="revealScores({ ws})"
                         v-bind:disabled="!visibility || !scores.length || !scores.length">
                         <i class="material-icons">3d_rotation</i>
                     </a>
-                    <a v-if="socket && !loading && admin"
+                    <a v-if="socket && !loading && admin && issues.selected"
                         class="btn-floating btn-large halfway-fab waves-effect waves-light right"
                         v-on:click="clearScores({ ws })"
                         v-bind:disabled="(!delete_forever && !visibility) || !scores.length">
@@ -204,7 +205,7 @@
                     <h5 class="truncate mx-0">{{ admin ? '(⭐)' : '' }} {{ perspective ? `(🃏) ${username}` : `(👁️)
                         ${username}`}}</h5>
                 </div>
-                <div class="row center" v-if="socket && !loading && perspective">
+                <div class="row center" v-if="socket && !loading && perspective && issues.selected">
                     <a class="waves-effect waves-light btn-large btn-options" :style="dynamicStyle(1)"
                         v-on:click="sendData({ action: 'save' }, 1)" v-bind:disabled="reveal">1</a>
                     <a class="waves-effect waves-light btn-large btn-options" :style="dynamicStyle(2)"
@@ -257,32 +258,71 @@
         <!-- Modal Begin -->
         <div id="modalIssues" class="modal bottom-sheet brown">
             <div class="modal-content">
+
                 <h4 class="header white-text">
+                    <i class="material-icons">featured_play_list</i>
                     Issues List
-                    <a class="waves-effect waves-light btn blue right">
+                    <a v-if="!newIssue && admin" class="waves-effect waves-light btn blue right"
+                        v-on:click="newIssue = true, issuesArea = null">
                         <i class="material-icons left">add</i>New Issue
                     </a>
+                    <a v-if="newIssue && admin" class="waves-effect waves-light btn red right"
+                        v-on:click="newIssue = false, issuesArea = null">
+                        <i class="material-icons">close</i>
+                    </a>
+                    <a v-if="newIssue && admin" class="waves-effect waves-light btn blue right mr-1"
+                        v-on:click="changeIssues" :disabled="!issuesArea">
+                        <i class="material-icons">save</i>
+                    </a>
                 </h4>
+
+                <h4 v-if="newIssue && admin" class="header white-text">
+                    <div class="input-field">
+                        <i class="material-icons prefix">mode_edit</i>
+                        <textarea id="icon_prefix2" class="materialize-textarea" v-model="issuesArea"></textarea>
+                        <label for="icon_prefix2">Type a issue or multiple separated by break lines</label>
+                    </div>
+                </h4>
+
                 <ul class="collection">
-
-                    <li class="collection-item avatar white-text teal">
-                        <i class="circle blue">1</i>
-                        <h5 class="large">History User - 1</h5>
-                        <h6 class="bold">0 points</h6>
-                        <a class="secondary-content waves-effect waves-light btn-floating red">
-                            <i class="material-icons">close</i>
-                        </a>
+                    <li v-if="!issues.issues.length" class="orange">
+                        <h4 class="large center white-text bold">(empty)</h4>
                     </li>
 
-                    <li class="collection-item avatar">
-                        <i class="circle blue">2</i>
-                        <h5 class="large">History User - 2</h5>
-                        <h6 class="bold">0 points</h6>
-                        <a class="secondary-content waves-effect waves-light btn-floating red">
-                            <i class="material-icons">close</i>
-                        </a>
-                    </li>
+                    <li class="collection-item avatar" :class="{ 'teal white-text' : issues.selected === issue.index}"
+                        v-for="(issue, index) in issues.issues" v-bind:key="index+1">
 
+                        <!-- Admin -->
+                        <div v-if="admin">
+                            <i class="secondary-content waves-effect waves-light circle blue"
+                                v-on:click="selectIssue(issue.index)">{{ index + 1 }}</i>
+                            <h6>{{ issue.issue }}</h6>
+                            <h6 v-if="issues.selected !== issue.index" class="col bold py-2">{{ `${issue.points} points`
+                                }}
+                            </h6>
+                            <select v-else class="browser-default" v-on:change="setPoints(issue.index, $event)"
+                                v-model="issue.points">
+                                <option value="0">0 points</option>
+                                <option value="1">1 points</option>
+                                <option value="2">2 points</option>
+                                <option value="3">3 points</option>
+                                <option value="5">5 points</option>
+                                <option value="8">8 points</option>
+                                <option value="13">13 points</option>
+                            </select>
+                            <a class="secondary-content waves-effect waves-light btn-floating red"
+                                v-on:click="removeIssue(issue.index)">
+                                <i class="material-icons">remove</i>
+                            </a>
+                        </div>
+
+                        <!-- Player -->
+                        <div v-else>
+                            <i class="secondary-content waves-effect waves-light circle blue">{{ index + 1 }}</i>
+                            <h6>{{ issue.issue }}</h6>
+                            <h6 class="col bold py-2">{{ `${issue.points} points` }}</h6>
+                        </div>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -305,13 +345,24 @@
             visibility: false,
             delete_forever: false,
             emojis: false,
+            newIssue: false,
             scores: [],
             spectators: [],
-            points: 0,
-            issues: null,
+            issues: {
+                selected: null,
+                issues: [
+                    {
+                        index: 'id-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                        issue: 'xd',
+                        points: 0
+                    }
+                ]
+            },
+            issuesArea: null,
             winner: null,
             socket: null,
             ws: null,
+            points: 0,
             username: '',
             session: '',
             timeout: 2000,
@@ -349,7 +400,7 @@
                 this.reveal = data.reveal
                 this.visibility = data.visibility
                 this.delete_forever = data.delete_forever
-                this.issues = data.issues
+                this.issues = data.issues ? data.issues : { selected: null, issues: [] }
                 this.points = (data.winner || []).length || data.action === 'clear' ? 0 : this.points
                 this.winner = (data.winner || []).map(points => {
                     return this.resolvePoints(points)
@@ -395,7 +446,41 @@
                 this.sendData({ action: 'admin', user }, null)
             },
             changeIssues() {
+                let issues = this.issues.issues
+                this.issuesArea.split('\n').map(_ => _.trim()).filter(_ => _.length > 0).forEach((issue, i) => {
+                    issues.push({
+                        index: 'id-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                        issue,
+                        points: 0
+                    })
+                })
+                this.issues.issues = issues
+                this.newIssue = false
+                this.issuesArea = null
                 this.sendData({ action: 'issues', user: { ws: this.ws, issues: this.issues } }, null)
+            },
+            setPoints(index, { target: { value } }) {
+                if ([0, 1, 2, 3, 5, 8, 13].includes(Number(value))) {
+                    this.issues.issues = this.issues.issues.map(
+                        issue => issue.index === index ? { ...issue, points: value } : issue
+                    )
+                    this.sendData({ action: 'issues', user: { ws: this.ws, issues: this.issues } }, null)
+                    this.sendData({ action: 'clear', user: { ws: this.ws } }, null)
+                }
+            },
+            selectIssue(index) {
+                if (this.issues.selected === index) { this.issues.selected = null }
+                else { this.issues.selected = index }
+                this.sendData({ action: 'issues', user: { ws: this.ws, issues: this.issues } }, null)
+                this.sendData({ action: 'clear', user: { ws: this.ws } }, null)
+            },
+            removeIssue(index) {
+                if (this.issues.selected === index) { this.issues.selected = null }
+                this.issues.issues = this.issues.issues.filter(data => data.index !== index)
+                this.sendData({ action: 'issues', user: { ws: this.ws, issues: this.issues } }, null)
+            },
+            throwEmojis(emojis) {
+                this.sendData({ action: 'emojis', user: { ws: this.ws, emojis } }, null)
             },
             resolvePoints(points) {
                 switch (points) {
@@ -505,7 +590,10 @@
                 this.scores = []
                 this.spectators = []
                 this.points = 0
-                this.issues = null
+                this.issues = {
+                    selected: null,
+                    issues: []
+                }
                 this.winner = null
                 this.socket = null
                 this.ws = null
@@ -525,7 +613,7 @@
             M.updateTextFields()
             M.Modal.init(document.querySelectorAll('.modal'), {})
             document.querySelector('emoji-picker').addEventListener('emoji-click', data => {
-                this.sendData({ action: 'emojis', user: { ws: this.ws, emojis: data.detail.unicode } }, null)
+                this.throwEmojis(data.detail.unicode)
             })
         },
         computed: {
@@ -537,13 +625,16 @@
                             'linear-gradient(to top, #4a72be 0%, #224574 100%)' : 'linear-gradient(to top, #0ba360 0%, #3cba92 100%)'
                     }
                 }
-            }
-            ,
-            winnerData() {
-                return `( ${this.winner.map(points => points).join(' | ')} )`
             },
             toolTipData() {
                 return this.spectators.map(player => player.admin ? `⭐ ${player.username}` : `👁️ ${player.username}`).join('<br>')
+            },
+            winnerData() {
+                return `( ${this.winner.map(points => points).join(' | ')} )`
+            },
+            issuesData() {
+                const issue = this.issues.issues.find(issue => issue.index === this.issues.selected)
+                return `(${issue.points}) ${issue.issue}`
             }
         },
         updated() {

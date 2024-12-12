@@ -23,8 +23,12 @@ p {
     font-size: 13px !important;
 }
 
-h4 {
-    margin: 10px 0px !important;
+h5 {
+    margin: 12px 0px !important;
+}
+
+select {
+    width: auto !important;
 }
 
 emoji-picker {
@@ -40,17 +44,37 @@ emoji-picker {
     margin-bottom: 0px !important;
 }
 
-.collection-item {
-    cursor: pointer;
-    transition: cubic-bezier(0.075, 0.82, 0.165, 1) 0.5s;
+.mr-1 {
+    margin-right: 10px !important;
 }
 
-.collection-item:hover {
-    background-color: rgba(255, 255, 255, 0.8) !important;
+.py-2 {
+    padding: 4px 8px !important;
+}
+
+.p-0 {
+    padding: 0px !important;
+}
+
+.badgePoints {
+    font-weight: bold;
+    font-size: 1.25em;
+    color: #fff;
+    border-radius: 8px;
+}
+
+.collection h4 {
+    margin: 0px !important;
+    padding: 10px !important;
 }
 
 .collection-item h5, .collection-item h6 {
     margin-top: 0px !important;
+}
+
+.collection-item a.btn {
+    aspect-ratio: 1;
+    padding: 0px 10px !important;
 }
 
 i.circle {

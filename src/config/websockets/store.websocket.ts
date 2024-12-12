@@ -22,7 +22,7 @@ const SOCKET = {
         const { session } : any = client.handshake.headers
         let users: Array<any> = STORE.getUserInCacheStorage(session)
         const user = users.findIndex(_ => _.ws === payload.user.ws)
-
+        
         if (user !== -1) {
             switch (payload.action) {
                 case 'save': {

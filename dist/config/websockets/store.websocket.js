@@ -21,6 +21,7 @@ const SOCKET = {
         const { session } = client.handshake.headers;
         let users = STORE.getUserInCacheStorage(session);
         const user = users.findIndex(_ => _.ws === payload.user.ws);
+        console.log("payload", payload);
         if (user !== -1) {
             switch (payload.action) {
                 case 'save': {
