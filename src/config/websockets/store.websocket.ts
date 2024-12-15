@@ -19,42 +19,46 @@ const STORE = {
 
 const SOCKET = {
     sendData: async (client: Socket, payload: any, server: Server) => {
-        const { session } : any = client.handshake.headers
+        const { session }: any = client.handshake.headers
         let users: Array<any> = STORE.getUserInCacheStorage(session)
-        const user = users.findIndex(_ => _.ws === payload.user.ws)
-        
-        if (user !== -1) {
+        const user = users.find(data => data.ws === payload.user.ws)
+
+        if (user) {
             switch (payload.action) {
                 case 'save': {
                     SOCKET.saveScores(client, server, payload.user)
-                    break
-                }
-                case 'issues': {
-                    SOCKET.changeIssues(client, server, payload.user)
-                    break
-                }
-                case 'reveal': {
-                    SOCKET.revealScores(client, server)
-                    break
-                }
-                case 'kick': {
-                    SOCKET.forceDisconnect(client, server, payload.user, { kick: true, ban: false })
                     break
                 }
                 case 'perspective': {
                     SOCKET.changePerspective(client, server, payload.user)
                     break
                 }
-                case 'admin': {
-                    SOCKET.makeSuperUser(client, server, payload.user)
-                    break
-                }
                 case 'emojis': {
                     SOCKET.serveEmojis(client, server, payload.user)
                     break
                 }
-                default: {
+                case user.admin && 'issues': {
+                    SOCKET.changeIssues(client, server, payload.user)
+                    break
+                }
+                case user.admin && 'reveal': {
+                    SOCKET.revealScores(client, server)
+                    break
+                }
+                case user.admin && 'kick': {
+                    SOCKET.forceDisconnect(client, server, payload.user, { kick: true, ban: false })
+                    break
+                }
+                case user.admin && 'admin': {
+                    SOCKET.makeSuperUser(client, server, payload.user)
+                    break
+                }
+                case user.admin && 'clear': {
                     SOCKET.clearScores(client, server, payload.action)
+                    break
+                }
+                default: {
+                    SOCKET.forceDisconnect(client, server, { ws: client.id }, { kick: false, ban: true })
                     break
                 }
             }
@@ -64,15 +68,15 @@ const SOCKET = {
     },
 
     changePerspective: (client: Socket, server: Server, user: any) => {
-        const { session } : any = client.handshake.headers
+        const { session }: any = client.handshake.headers
         let users: Array<any> = STORE.getUserInCacheStorage(session)
         let userAux = null
         if (users) {
-            users.some(_ => {
-                if (_.ws === user.ws) {
-                    userAux = _
-                    _.perspective = !_.perspective
-                    _.points = 0
+            users.some(data => {
+                if (data.ws === user.ws) {
+                    userAux = data
+                    data.perspective = !data.perspective
+                    data.points = 0
                     return true
                 }
             })
@@ -100,6 +104,8 @@ const SOCKET = {
             const array: any = SOCKET.separateUsers(STORE.getUserInCacheStorage(session))
             server.emit(session, {
                 show: true,
+                left: false,
+                clear: false,
                 joinOrLeft: `(${!userAux.perspective ? '🃏' : '👁️'}) ${userAux.username} has changed of perspective (${userAux.perspective ? '🃏' : '👁️'})!`,
                 scores: array.scores,
                 spectators: array.spectators,
@@ -111,21 +117,21 @@ const SOCKET = {
     },
 
     makeSuperUser: (client: Socket, server: Server, user: any) => {
-        const  { session } : any = client.handshake.headers
+        const { session }: any = client.handshake.headers
         let users: Array<any> = STORE.getUserInCacheStorage(session)
         let userAux = null, currentAdminAux = null
         if (users) {
-            users.some(_ => {
-                if (_.admin) {
-                    userAux = _
-                    _.admin = false
+            users.some(data => {
+                if (data.admin) {
+                    userAux = data
+                    data.admin = false
                     return true
                 }
             })
-            users.some(_ => {
-                if (_.ws === user.ws) {
-                    currentAdminAux = _
-                    _.admin = true
+            users.some(data => {
+                if (data.ws === user.ws) {
+                    currentAdminAux = data
+                    data.admin = true
                     return true
                 }
             })
@@ -134,6 +140,7 @@ const SOCKET = {
             const array: any = SOCKET.separateUsers(STORE.getUserInCacheStorage(session))
             server.emit(session, {
                 show: true,
+                left: false,
                 joinOrLeft: `(${user.perspective ? '⭐🃏' : '⭐👁️'}) ${user.username} has been set as admin!`,
                 scores: array.scores,
                 spectators: array.spectators,
@@ -149,7 +156,7 @@ const SOCKET = {
     },
 
     changeIssues: (client: Socket, server: Server, { issues }: any) => {
-        const { session } : any = client.handshake.headers
+        const { session }: any = client.handshake.headers
         const configurations: any = STORE.getConfigurationsInCacheStorage(session)
         if (configurations) {
             STORE.setConfigurationsInCacheStorage(session, {
@@ -170,9 +177,9 @@ const SOCKET = {
     },
 
     saveScores: (client: Socket, server: Server, { points, ws }: any) => {
-        const { session } : any = client.handshake.headers
+        const { session }: any = client.handshake.headers
         let users: Array<any> = STORE.getUserInCacheStorage(session)
-        const user = users.findIndex(_ => _.ws === ws)
+        const user = users.findIndex(data => data.ws === ws)
         users[user].points = POINTS.includes(points) ? points : HACKER
         STORE.setUserInCacheStorage(session, users)
 
@@ -196,10 +203,11 @@ const SOCKET = {
     },
 
     revealScores: (client: Socket, server: Server) => {
-        const { session } : any = client.handshake.headers
+        const { session }: any = client.handshake.headers
         const configurations: any = STORE.getConfigurationsInCacheStorage(session)
         if (configurations) {
             STORE.setConfigurationsInCacheStorage(session, {
+                clear: false,
                 reveal: true,
                 visibility: false,
                 delete_forever: true,
@@ -216,10 +224,10 @@ const SOCKET = {
     },
 
     clearScores: (client: Socket, server: Server, action: string) => {
-        const { session } : any = client.handshake.headers
+        const { session }: any = client.handshake.headers
         let users: Array<any> = STORE.getUserInCacheStorage(session)
         const configurations: any = STORE.getConfigurationsInCacheStorage(session)
-        users.forEach(_ => _.points = 0)
+        users.forEach(data => data.points = 0)
         STORE.setUserInCacheStorage(session, users)
         if (configurations) {
             STORE.setConfigurationsInCacheStorage(session, {
@@ -230,9 +238,10 @@ const SOCKET = {
                 issues: configurations.issues
             })
         }
-        
+
         const array: any = SOCKET.separateUsers(STORE.getUserInCacheStorage(session))
         server.emit(session, {
+            clear: true,
             scores: array.scores,
             spectators: array.spectators,
             action,
@@ -241,18 +250,18 @@ const SOCKET = {
     },
 
     completedScores: (client: Socket) => {
-        const { session } : any = client.handshake.headers
+        const { session }: any = client.handshake.headers
         const users: Array<any> = STORE.getUserInCacheStorage(session)
-        const hasZero = users.find(_ => _.points === 0 && _.perspective === true)
-        return hasZero ? false : true
+        const hasZero = users.find(data => data.points === 0 && data.perspective === true)
+        return !hasZero
     },
 
     winner: (client: Socket) => {
-        const { session } : any = client.handshake.headers
+        const { session }: any = client.handshake.headers
         const users: Array<any> = STORE.getUserInCacheStorage(session)
         let arr = []
-        users.forEach(_ => {
-            if (_.perspective) arr.push(_.points)
+        users.forEach(data => {
+            if (data.perspective) arr.push(data.points)
         })
         const tally = (acc: { [x: number]: number }, x: number) => {
             if (!acc[x]) {
@@ -269,15 +278,15 @@ const SOCKET = {
     },
 
     anyoneIsAdmin: (users: any) => {
-        return users.find((_: { admin: boolean }) => _.admin)
+        return users.find((data: { admin: boolean }) => data.admin)
     },
 
     makeAdmin: (client: Socket, server: Server, users: Array<any>) => {
-        const { session } : any = client.handshake.headers
-        users.some(_ => {
+        const { session }: any = client.handshake.headers
+        users.some(data => {
             if (!SOCKET.anyoneIsAdmin(users)) {
-                _.admin = true
-                server.to(_.ws).emit(session, { admin: _.admin })
+                data.admin = true
+                server.to(data.ws).emit(session, { admin: data.admin })
                 return true
             }
         })
@@ -285,7 +294,7 @@ const SOCKET = {
     },
 
     forceDisconnect: (client: Socket, server: Server, user: any, reason: any) => {
-        const { session, username, ws } : any = client.handshake.headers
+        const { session, username }: any = client.handshake.headers
         const perspective = user.perspective ? '🃏' : '👁️'
         client.handshake.headers.ws = client.id
         WSAUX = user.ws
@@ -318,12 +327,12 @@ const SOCKET = {
     },
 
     addUser: async (client: Socket, server: Server) => {
-        let { session, username, ws, perspective } : any = client.handshake.headers
-        perspective = perspective === 'true' ? true : false
+        let { session, username, perspective }: any = client.handshake.headers
+        perspective = perspective === 'true'
         let users: Array<any> = STORE.getUserInCacheStorage(session)
         const configurations: any = STORE.getConfigurationsInCacheStorage(session)
 
-        if (!(users.find(_ => _.username === username))) {
+        if (!(users.find(data => data.username === username))) {
             const admin = !SOCKET.anyoneIsAdmin(users)
             const user = {
                 username,
@@ -354,10 +363,12 @@ const SOCKET = {
                     issues: configurations.issues
                 })
             }
-            
+
             const array: any = SOCKET.separateUsers(STORE.getUserInCacheStorage(session))
             server.emit(session, {
                 show: true,
+                left: false,
+                user: client.id,
                 joinOrLeft: `(${perspective ? '🃏' : '👁️'}) ${username} has joined!`,
                 scores: array.scores,
                 spectators: array.spectators,
@@ -369,14 +380,14 @@ const SOCKET = {
     },
 
     removeUser: async (client: Socket, server: Server) => {
-        let { session, username, ws, perspective } : any = client.handshake.headers
-        perspective = perspective === 'true' ? true : false
+        let { session, username, ws, perspective }: any = client.handshake.headers
+        perspective = perspective === 'true'
         let users: Array<any> = STORE.getUserInCacheStorage(session)
         const configurations: any = STORE.getConfigurationsInCacheStorage(session)
 
         if (!(!!ws && !!WSAUX)) { WSAUX = client.id }
-        else { WSAUX = ws ? ws : WSAUX }
-        users = users.filter(_ => _.ws !== WSAUX)
+        else { WSAUX = ws || WSAUX }
+        users = users.filter(data => data.ws !== WSAUX)
 
         if (users.length) {
             users = SOCKET.makeAdmin(client, server, users)
@@ -406,7 +417,8 @@ const SOCKET = {
         client.disconnect(true)
         const array: any = SOCKET.separateUsers(STORE.getUserInCacheStorage(session))
         server.emit(session, {
-            show: ![WSAUX, ws, client.id].every(_ => _ === WSAUX),
+            show: ![WSAUX, ws, client.id].every(data => data === WSAUX),
+            left: true,
             joinOrLeft: `(${perspective ? '🃏' : '👁️'}) ${username} has left!`,
             scores: array.scores,
             spectators: array.spectators,
@@ -418,15 +430,15 @@ const SOCKET = {
     separateUsers: (users: Array<any>) => {
         let scores = [], spectators = []
         users.forEach(user => {
-            if (user.perspective)   scores.push(user)
-            else                    spectators.push(user)
+            if (user.perspective) scores.push(user)
+            else spectators.push(user)
         })
         return { scores, spectators }
     },
 
-    serveEmojis: (client: Socket, server: Server, { emojis }: any) => {
-        const { session } : any = client.handshake.headers
-        
+    serveEmojis: (client: Socket, server: Server, emojis: any) => {
+        const { session }: any = client.handshake.headers
+
         const array: any = SOCKET.separateUsers(STORE.getUserInCacheStorage(session))
         server.emit(session, {
             emojis,

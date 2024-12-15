@@ -13,7 +13,7 @@ import { SOCKET, SERVER, GATEWAY } from './store.websocket'
 })
 export class GatewayWebSocket implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server
-  private logger: Logger = new Logger(GATEWAY)
+  private readonly logger: Logger = new Logger(GATEWAY)
 
   @SubscribeMessage(SERVER)
   async handleMessage(client: Socket, payload: any) {

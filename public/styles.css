@@ -14,7 +14,8 @@ label {
     color: gainsboro !important;
 }
 
-input, .materialize-textarea {
+input,
+.materialize-textarea {
     color: white !important;
     border-bottom: 1px solid white !important;
 }
@@ -36,6 +37,7 @@ emoji-picker {
     bottom: 80px;
     height: 400px;
     position: fixed;
+    z-index: 11 !important;
     --num-groups: 9;
     --num-columns: 8;
 }
@@ -68,7 +70,8 @@ emoji-picker {
     padding: 10px !important;
 }
 
-.collection-item h5, .collection-item h6 {
+.collection-item h5,
+.collection-item h6 {
     margin-top: 0px !important;
 }
 
@@ -85,7 +88,7 @@ i.circle {
     font-size: 2rem !important;
 }
 
-.bold { 
+.bold {
     font-weight: bold !important;
 }
 
@@ -115,11 +118,6 @@ i.circle {
 .red {
     background-color: #bd143e;
     background-image: linear-gradient(to top, #ac0e35 0%, #bd2121 100%);
-}
-
-.orange {
-    background-color: #ff5858 !important;
-    background-image: linear-gradient(-60deg, #ff5858 0%, #f09819 100%)!important;
 }
 
 .material-icons {

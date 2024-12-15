@@ -20,40 +20,43 @@ const SOCKET = {
     sendData: async (client, payload, server) => {
         const { session } = client.handshake.headers;
         let users = STORE.getUserInCacheStorage(session);
-        const user = users.findIndex(_ => _.ws === payload.user.ws);
-        console.log("payload", payload);
-        if (user !== -1) {
+        const user = users.find(data => data.ws === payload.user.ws);
+        if (user) {
             switch (payload.action) {
                 case 'save': {
                     SOCKET.saveScores(client, server, payload.user);
-                    break;
-                }
-                case 'issues': {
-                    SOCKET.changeIssues(client, server, payload.user);
-                    break;
-                }
-                case 'reveal': {
-                    SOCKET.revealScores(client, server);
-                    break;
-                }
-                case 'kick': {
-                    SOCKET.forceDisconnect(client, server, payload.user, { kick: true, ban: false });
                     break;
                 }
                 case 'perspective': {
                     SOCKET.changePerspective(client, server, payload.user);
                     break;
                 }
-                case 'admin': {
-                    SOCKET.makeSuperUser(client, server, payload.user);
-                    break;
-                }
                 case 'emojis': {
                     SOCKET.serveEmojis(client, server, payload.user);
                     break;
                 }
-                default: {
+                case user.admin && 'issues': {
+                    SOCKET.changeIssues(client, server, payload.user);
+                    break;
+                }
+                case user.admin && 'reveal': {
+                    SOCKET.revealScores(client, server);
+                    break;
+                }
+                case user.admin && 'kick': {
+                    SOCKET.forceDisconnect(client, server, payload.user, { kick: true, ban: false });
+                    break;
+                }
+                case user.admin && 'admin': {
+                    SOCKET.makeSuperUser(client, server, payload.user);
+                    break;
+                }
+                case user.admin && 'clear': {
                     SOCKET.clearScores(client, server, payload.action);
+                    break;
+                }
+                default: {
+                    SOCKET.forceDisconnect(client, server, { ws: client.id }, { kick: false, ban: true });
                     break;
                 }
             }
@@ -67,11 +70,11 @@ const SOCKET = {
         let users = STORE.getUserInCacheStorage(session);
         let userAux = null;
         if (users) {
-            users.some(_ => {
-                if (_.ws === user.ws) {
-                    userAux = _;
-                    _.perspective = !_.perspective;
-                    _.points = 0;
+            users.some(data => {
+                if (data.ws === user.ws) {
+                    userAux = data;
+                    data.perspective = !data.perspective;
+                    data.points = 0;
                     return true;
                 }
             });
@@ -96,7 +99,7 @@ const SOCKET = {
                 });
             }
             const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
-            server.emit(session, Object.assign({ show: true, joinOrLeft: `(${!userAux.perspective ? '🃏' : '👁️'}) ${userAux.username} has changed of perspective (${userAux.perspective ? '🃏' : '👁️'})!`, scores: array.scores, spectators: array.spectators }, STORE.getConfigurationsInCacheStorage(session)));
+            server.emit(session, Object.assign({ show: true, left: false, clear: false, joinOrLeft: `(${!userAux.perspective ? '🃏' : '👁️'}) ${userAux.username} has changed of perspective (${userAux.perspective ? '🃏' : '👁️'})!`, scores: array.scores, spectators: array.spectators }, STORE.getConfigurationsInCacheStorage(session)));
             server.to(userAux.ws).emit(session, { perspective: userAux.perspective });
             server.to(userAux.ws).emit(session, { admin: userAux.admin });
         }
@@ -106,23 +109,23 @@ const SOCKET = {
         let users = STORE.getUserInCacheStorage(session);
         let userAux = null, currentAdminAux = null;
         if (users) {
-            users.some(_ => {
-                if (_.admin) {
-                    userAux = _;
-                    _.admin = false;
+            users.some(data => {
+                if (data.admin) {
+                    userAux = data;
+                    data.admin = false;
                     return true;
                 }
             });
-            users.some(_ => {
-                if (_.ws === user.ws) {
-                    currentAdminAux = _;
-                    _.admin = true;
+            users.some(data => {
+                if (data.ws === user.ws) {
+                    currentAdminAux = data;
+                    data.admin = true;
                     return true;
                 }
             });
             STORE.setUserInCacheStorage(session, users);
             const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
-            server.emit(session, Object.assign({ show: true, joinOrLeft: `(${user.perspective ? '⭐🃏' : '⭐👁️'}) ${user.username} has been set as admin!`, scores: array.scores, spectators: array.spectators }, STORE.getConfigurationsInCacheStorage(session)));
+            server.emit(session, Object.assign({ show: true, left: false, joinOrLeft: `(${user.perspective ? '⭐🃏' : '⭐👁️'}) ${user.username} has been set as admin!`, scores: array.scores, spectators: array.spectators }, STORE.getConfigurationsInCacheStorage(session)));
             server.to(userAux.ws).emit(session, {
                 admin: userAux.admin
             });
@@ -149,7 +152,7 @@ const SOCKET = {
     saveScores: (client, server, { points, ws }) => {
         const { session } = client.handshake.headers;
         let users = STORE.getUserInCacheStorage(session);
-        const user = users.findIndex(_ => _.ws === ws);
+        const user = users.findIndex(data => data.ws === ws);
         users[user].points = POINTS.includes(points) ? points : HACKER;
         STORE.setUserInCacheStorage(session, users);
         const configurations = STORE.getConfigurationsInCacheStorage(session);
@@ -170,6 +173,7 @@ const SOCKET = {
         const configurations = STORE.getConfigurationsInCacheStorage(session);
         if (configurations) {
             STORE.setConfigurationsInCacheStorage(session, {
+                clear: false,
                 reveal: true,
                 visibility: false,
                 delete_forever: true,
@@ -184,7 +188,7 @@ const SOCKET = {
         const { session } = client.handshake.headers;
         let users = STORE.getUserInCacheStorage(session);
         const configurations = STORE.getConfigurationsInCacheStorage(session);
-        users.forEach(_ => _.points = 0);
+        users.forEach(data => data.points = 0);
         STORE.setUserInCacheStorage(session, users);
         if (configurations) {
             STORE.setConfigurationsInCacheStorage(session, {
@@ -196,21 +200,21 @@ const SOCKET = {
             });
         }
         const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
-        server.emit(session, Object.assign({ scores: array.scores, spectators: array.spectators, action }, STORE.getConfigurationsInCacheStorage(session)));
+        server.emit(session, Object.assign({ clear: true, scores: array.scores, spectators: array.spectators, action }, STORE.getConfigurationsInCacheStorage(session)));
     },
     completedScores: (client) => {
         const { session } = client.handshake.headers;
         const users = STORE.getUserInCacheStorage(session);
-        const hasZero = users.find(_ => _.points === 0 && _.perspective === true);
-        return hasZero ? false : true;
+        const hasZero = users.find(data => data.points === 0 && data.perspective === true);
+        return !hasZero;
     },
     winner: (client) => {
         const { session } = client.handshake.headers;
         const users = STORE.getUserInCacheStorage(session);
         let arr = [];
-        users.forEach(_ => {
-            if (_.perspective)
-                arr.push(_.points);
+        users.forEach(data => {
+            if (data.perspective)
+                arr.push(data.points);
         });
         const tally = (acc, x) => {
             if (!acc[x]) {
@@ -226,21 +230,21 @@ const SOCKET = {
         return (keys.filter(x => totals[x] === Math.max(...values))).map(x => Number(x));
     },
     anyoneIsAdmin: (users) => {
-        return users.find((_) => _.admin);
+        return users.find((data) => data.admin);
     },
     makeAdmin: (client, server, users) => {
         const { session } = client.handshake.headers;
-        users.some(_ => {
+        users.some(data => {
             if (!SOCKET.anyoneIsAdmin(users)) {
-                _.admin = true;
-                server.to(_.ws).emit(session, { admin: _.admin });
+                data.admin = true;
+                server.to(data.ws).emit(session, { admin: data.admin });
                 return true;
             }
         });
         return users;
     },
     forceDisconnect: (client, server, user, reason) => {
-        const { session, username, ws } = client.handshake.headers;
+        const { session, username } = client.handshake.headers;
         const perspective = user.perspective ? '🃏' : '👁️';
         client.handshake.headers.ws = client.id;
         WSAUX = user.ws;
@@ -273,11 +277,11 @@ const SOCKET = {
         client.in(user.ws).disconnectSockets();
     },
     addUser: async (client, server) => {
-        let { session, username, ws, perspective } = client.handshake.headers;
-        perspective = perspective === 'true' ? true : false;
+        let { session, username, perspective } = client.handshake.headers;
+        perspective = perspective === 'true';
         let users = STORE.getUserInCacheStorage(session);
         const configurations = STORE.getConfigurationsInCacheStorage(session);
-        if (!(users.find(_ => _.username === username))) {
+        if (!(users.find(data => data.username === username))) {
             const admin = !SOCKET.anyoneIsAdmin(users);
             const user = {
                 username,
@@ -310,7 +314,7 @@ const SOCKET = {
                 });
             }
             const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
-            server.emit(session, Object.assign({ show: true, joinOrLeft: `(${perspective ? '🃏' : '👁️'}) ${username} has joined!`, scores: array.scores, spectators: array.spectators }, STORE.getConfigurationsInCacheStorage(session)));
+            server.emit(session, Object.assign({ show: true, left: false, user: client.id, joinOrLeft: `(${perspective ? '🃏' : '👁️'}) ${username} has joined!`, scores: array.scores, spectators: array.spectators }, STORE.getConfigurationsInCacheStorage(session)));
         }
         else {
             SOCKET.forceDisconnect(client, server, { ws: client.id }, { kick: false, ban: false });
@@ -318,16 +322,16 @@ const SOCKET = {
     },
     removeUser: async (client, server) => {
         let { session, username, ws, perspective } = client.handshake.headers;
-        perspective = perspective === 'true' ? true : false;
+        perspective = perspective === 'true';
         let users = STORE.getUserInCacheStorage(session);
         const configurations = STORE.getConfigurationsInCacheStorage(session);
         if (!(!!ws && !!WSAUX)) {
             WSAUX = client.id;
         }
         else {
-            WSAUX = ws ? ws : WSAUX;
+            WSAUX = ws || WSAUX;
         }
-        users = users.filter(_ => _.ws !== WSAUX);
+        users = users.filter(data => data.ws !== WSAUX);
         if (users.length) {
             users = SOCKET.makeAdmin(client, server, users);
             STORE.setUserInCacheStorage(session, users);
@@ -356,7 +360,7 @@ const SOCKET = {
         }
         client.disconnect(true);
         const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
-        server.emit(session, Object.assign({ show: ![WSAUX, ws, client.id].every(_ => _ === WSAUX), joinOrLeft: `(${perspective ? '🃏' : '👁️'}) ${username} has left!`, scores: array.scores, spectators: array.spectators }, STORE.getConfigurationsInCacheStorage(session)));
+        server.emit(session, Object.assign({ show: ![WSAUX, ws, client.id].every(data => data === WSAUX), left: true, joinOrLeft: `(${perspective ? '🃏' : '👁️'}) ${username} has left!`, scores: array.scores, spectators: array.spectators }, STORE.getConfigurationsInCacheStorage(session)));
         WSAUX = null;
     },
     separateUsers: (users) => {
@@ -369,7 +373,7 @@ const SOCKET = {
         });
         return { scores, spectators };
     },
-    serveEmojis: (client, server, { emojis }) => {
+    serveEmojis: (client, server, emojis) => {
         const { session } = client.handshake.headers;
         const array = SOCKET.separateUsers(STORE.getUserInCacheStorage(session));
         server.emit(session, Object.assign({ emojis, scores: array.scores, spectators: array.spectators }, STORE.getConfigurationsInCacheStorage(session)));
