@@ -20,6 +20,6 @@ declare const SOCKET: {
         scores: any[];
         spectators: any[];
     };
-    serveEmojis: (client: Socket, server: Server, { emojis }: any) => void;
+    serveEmojis: (client: Socket, server: Server, emojis: any) => void;
 };
 export { SOCKET, SERVER, GATEWAY };

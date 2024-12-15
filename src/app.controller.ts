@@ -12,6 +12,6 @@ export class AppController {
 
   @Get()
   @Render('index')
-  root() {}
+  root() { /* document why this method 'root' is empty */ }
   
 }

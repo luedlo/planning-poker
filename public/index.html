@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> -->
     <script src="https://unpkg.com/vue@2/dist/vue.min.js"></script>
     <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"
         integrity="sha384-KAZ4DtjNhLChOB/hxXuKqhMLYvx3b5MlT55xPEiNmREKRzeEm+RVPlTnAn0ajQNs"
@@ -172,7 +171,7 @@
                                         <h6 v-else class="points-badge">Se te perdió algo?<br>🤔</h6>
                                     </div>
                                 </div>
-                                <p v-if="username === score.username"><strong>(me)</strong></p>
+                                <p v-if="ws === score.ws"><strong>(me)</strong></p>
                                 <p v-else class="truncate">{{ score.username }}</p>
                             </div>
                             </p>
@@ -234,7 +233,8 @@
         <emoji-picker v-show="emojis" class="dark" emoji-version="15.0"></emoji-picker>
 
         <div v-if="socket && !loading" class="fixed-action-btn left">
-            <a v-on:click="emojis = !emojis" class="waves-effect waves-light btn-floating btn-disabled pink">
+            <a v-on:click="emojis = !emojis" :disabled="btnEmojis"
+                class="waves-effect waves-light btn-floating btn-disabled pink">
                 <i class="large material-icons">insert_emoticon</i>
             </a>
         </div>
@@ -242,12 +242,12 @@
 
         <!-- Spectator Begin -->
         <div v-if="socket && !loading" class="fixed-action-btn">
-            <a v-show="!spectators.length" v-on:click="changePerspective({ ws })"
-                class="waves-effect waves-light btn-floating btn-disabled orange">
+            <a v-show="!spectators.length" v-on:click="changePerspective({ ws })" :disabled="btnSpectators"
+                class="waves-effect waves-light btn-floating deep-orange">
                 <i class="large material-icons">visibility</i>
             </a>
-            <a v-show="spectators.length" v-on:click="changePerspective({ ws })"
-                class="waves-effect waves-light btn-floating btn-disabled orange tooltipped" data-position="top"
+            <a v-show="spectators.length" v-on:click="changePerspective({ ws })" :disabled="btnSpectators"
+                class="waves-effect waves-light btn-floating deep-orange tooltipped" data-position="top"
                 v-bind:data-tooltip="toolTipData">
                 <i class="large material-icons">visibility</i>
             </a>
@@ -285,7 +285,7 @@
                 </h4>
 
                 <ul class="collection">
-                    <li v-if="!issues.issues.length" class="orange">
+                    <li v-if="!issues.issues.length" class="deep-orange">
                         <h4 class="large center white-text bold">(empty)</h4>
                     </li>
 
@@ -346,26 +346,23 @@
             delete_forever: false,
             emojis: false,
             newIssue: false,
-            scores: [],
-            spectators: [],
-            issues: {
-                selected: null,
-                issues: [
-                    {
-                        index: 'id-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-                        issue: 'xd',
-                        points: 0
-                    }
-                ]
-            },
+            btnEmojis: false,
+            btnSpectators: false,
             issuesArea: null,
             winner: null,
             socket: null,
             ws: null,
-            points: 0,
             username: '',
             session: '',
+            points: 0,
             timeout: 2000,
+            issues: {
+                selected: null,
+                issues: []
+            },
+            scores: [],
+            spectators: [],
+            validPoints: [-2, -1, 0, 1, 2, 3, 5, 8, 13],
             title: 'Planning Poker',
             server: 'devstrauss-data-sockets-service-planning-poker',
             // host: 'http://localhost:3000',
@@ -401,13 +398,13 @@
                 this.visibility = data.visibility
                 this.delete_forever = data.delete_forever
                 this.issues = data.issues ? data.issues : { selected: null, issues: [] }
-                this.points = (data.winner || []).length || data.action === 'clear' ? 0 : this.points
+                this.points = ((data.winner || []).length && data.clear) || (!(data.winner || []).length && data.clear) ? 0 : this.points
                 this.winner = (data.winner || []).map(points => {
                     return this.resolvePoints(points)
                 })
             },
             validateInputPoints() {
-                if (this.points >= -2 && this.points !== null && this.points !== undefined) {
+                if (this.validPoints.includes(this.points)) {
                     return true
                 } else {
                     M.toast({ html: 'Choose a valid point option!', classes: 'rounded' })
@@ -415,10 +412,10 @@
                 }
             },
             validateInputUsername() {
-                if (this.username.length > 0 && this.username !== null && this.username !== undefined) {
+                if ((this.username.length > 0 && this.username.length <= 15) && this.username !== null && this.username !== undefined) {
                     return true
                 } else {
-                    M.toast({ html: 'Type a valid username!', classes: 'rounded' })
+                    M.toast({ html: 'Type a valid username! (No empty and 15 characters max)', classes: 'rounded' })
                     return false
                 }
             },
@@ -426,12 +423,12 @@
                 if (this.session.length > 0 && this.session !== null && this.session !== undefined) {
                     return true
                 } else {
-                    M.toast({ html: 'Type a valid server!', classes: 'rounded' })
+                    M.toast({ html: 'Type a valid server! (No empty and 15 characters max)', classes: 'rounded' })
                     return false
                 }
             },
             revealScores(user) {
-                this.sendData({ action: 'reveal', user }, null)
+                this.sendData({ action: 'reveal', user }, this.points)
             },
             clearScores(user) {
                 this.sendData({ action: 'clear', user }, null)
@@ -440,10 +437,14 @@
                 this.sendData({ action: 'kick', user }, null)
             },
             changePerspective(user) {
-                this.sendData({ action: 'perspective', user }, null)
+                this.btnSpectators = true
+                this.sendData({ action: 'perspective', user }, this.points)
+                setTimeout(() => {
+                    this.btnSpectators = false
+                }, this.timeout * 2)
             },
             makeAdmin(user) {
-                this.sendData({ action: 'admin', user }, null)
+                this.sendData({ action: 'admin', user }, this.points)
             },
             changeIssues() {
                 let issues = this.issues.issues
@@ -457,7 +458,7 @@
                 this.issues.issues = issues
                 this.newIssue = false
                 this.issuesArea = null
-                this.sendData({ action: 'issues', user: { ws: this.ws, issues: this.issues } }, null)
+                this.sendData({ action: 'issues', user: { ws: this.ws, issues: this.issues } }, this.points)
             },
             setPoints(index, { target: { value } }) {
                 if ([0, 1, 2, 3, 5, 8, 13].includes(Number(value))) {
@@ -475,12 +476,19 @@
                 this.sendData({ action: 'clear', user: { ws: this.ws } }, null)
             },
             removeIssue(index) {
-                if (this.issues.selected === index) { this.issues.selected = null }
+                if (this.issues.selected === index) {
+                    this.issues.selected = null
+                    this.sendData({ action: 'clear', user: { ws: this.ws } }, null)
+                }
                 this.issues.issues = this.issues.issues.filter(data => data.index !== index)
-                this.sendData({ action: 'issues', user: { ws: this.ws, issues: this.issues } }, null)
+                this.sendData({ action: 'issues', user: { ws: this.ws, issues: this.issues } }, this.points)
             },
             throwEmojis(emojis) {
-                this.sendData({ action: 'emojis', user: { ws: this.ws, emojis } }, null)
+                this.btnEmojis = true
+                this.sendData({ action: 'emojis', user: { ws: this.ws, username: this.username, emojis } }, this.points)
+                setTimeout(() => {
+                    this.btnEmojis = false
+                }, this.timeout * 2)
             },
             resolvePoints(points) {
                 switch (points) {
@@ -525,7 +533,7 @@
                             this.loading = false
 
                             if (response.reason) {
-                                M.toast({ html: response.reason, classes: 'rounded orange' })
+                                M.toast({ html: response.reason, classes: 'rounded deep-orange' })
                             }
 
                             if (response.kick || response.ban) {
@@ -535,20 +543,34 @@
                                 this.ws = null
                             }
 
-                            if (response.joinOrLeft, response.show) {
-                                M.toast({ html: response.joinOrLeft, classes: 'rounded teal' })
+                            if (response.joinOrLeft && response.show) {
+                                const { joinOrLeft, left, user } = response
+                                M.toast({
+                                    html: user === this.ws ? `Welcome ${this.username}!` : joinOrLeft,
+                                    classes: `rounded ${left ? 'brown' : 'teal'}`
+                                })
                             }
 
                             if (response.perspective !== undefined) {
+                                this.btnSpectators = true
+                                this.points = 0
                                 this.perspective = response.perspective
+                                setTimeout(() => {
+                                    this.btnSpectators = false
+                                }, this.timeout)
                             } else if (response.admin !== undefined) {
                                 this.admin = response.admin
                             } else if (response.ws !== undefined) {
                                 this.ws = response.ws
                             } else if (response.emojis !== undefined) {
+                                const { ws, username, emojis } = response.emojis
                                 this.emojis = false
+                                M.toast({
+                                    html: `${ws === this.ws ? '<strong>(me)</strong>' : username}: ${emojis}`,
+                                    classes: 'rounded'
+                                })
                                 this.jsConfetti.addConfetti({
-                                    emojis: [response.emojis],
+                                    emojis: [emojis],
                                     confettiRadius: Math.floor(Math.random() * 100), // Min: 0, Max: 100,
                                     emojiSize: Math.floor(Math.random() * 100) + 50, // Min: 50, Max: 100
                                     confettiNumber: Math.floor(Math.random() * 4) + 1, // Min: 1, Max: 5
@@ -559,25 +581,61 @@
                             }
                         })
                         this.socket.on("disconnect", (reason) => {
-                            this.loading = false
-                            this.socket.close()
-                            this.socket = null
-                            this.points = 0
-                            this.ws = null
                             M.toast({ html: 'Server disconnection!', classes: 'rounded red' })
+                            this.socket.close()
+                            this.loading = false
+                            this.admin = false
+                            this.perspective = false
+                            this.reveal = false
+                            this.completedScores = false
+                            this.visibility = false
+                            this.delete_forever = false
+                            this.emojis = false
+                            this.newIssue = false
+                            this.btnEmojis = false
+                            this.btnSpectators = false
+                            this.issuesArea = null
+                            this.winner = null
+                            this.socket = null
+                            this.ws = null
+                            this.points = 0
+                            this.issues = {
+                                selected: null,
+                                issues: []
+                            }
                         })
                         this.socket.on("connect_error", (err) => {
-                            this.loading = false
                             if (this.socket) M.toast({ html: 'Server is having issues! ' + err, classes: 'rounded red' })
                             this.socket.close()
+                            this.loading = false
+                            this.admin = false
+                            this.perspective = false
+                            this.reveal = false
+                            this.completedScores = false
+                            this.visibility = false
+                            this.delete_forever = false
+                            this.emojis = false
+                            this.newIssue = false
+                            this.btnEmojis = false
+                            this.btnSpectators = false
+                            this.issuesArea = null
+                            this.winner = null
                             this.socket = null
-                            this.points = 0
                             this.ws = null
+                            this.points = 0
+                            this.issues = {
+                                selected: null,
+                                issues: []
+                            }
                         })
                     }, this.timeout)
                 }
             },
             logout() {
+                M.toast({
+                    html: `Goodbye ${this.username}!`,
+                    classes: 'rounded brown'
+                })
                 this.socket.close()
                 this.loading = false
                 this.admin = false
@@ -587,16 +645,18 @@
                 this.visibility = false
                 this.delete_forever = false
                 this.emojis = false
-                this.scores = []
-                this.spectators = []
+                this.newIssue = false
+                this.btnEmojis = false
+                this.btnSpectators = false
+                this.issuesArea = null
+                this.winner = null
+                this.socket = null
+                this.ws = null
                 this.points = 0
                 this.issues = {
                     selected: null,
                     issues: []
                 }
-                this.winner = null
-                this.socket = null
-                this.ws = null
             },
             copyLink() {
                 navigator.clipboard.writeText(location.href)

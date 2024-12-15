@@ -1,8 +1,8 @@
 {
   "name": "planning-poker-api",
-  "version": "0.0.1",
-  "description": "A nestjs api for seguros team of concredito",
-  "author": "LEVISTRAUUS",
+  "version": "1.1",
+  "description": "A NestJS api for Seguros team of ConCredito & SanaTuDeuda team of Coppel(Kairos)",
+  "author": "LEVISTRAUSS || LEVISTRAUUS || LEVISITO || LEVIS",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

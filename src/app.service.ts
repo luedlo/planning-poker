@@ -5,7 +5,7 @@ export class AppService {
   async getHello(): Promise<Object> {
     return {
       name: 'PLANNING POKER API',
-      version: '1.0-beta',
+      version: '1.1-Release Candidate (RC)',
       date: new Date()
     }
   }
