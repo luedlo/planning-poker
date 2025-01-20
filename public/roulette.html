@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roulette Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/7.8.2/sweetalert2.min.css">
+    <style>
+        * {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .btn-play,
+        .btn-spin {
+            position: fixed;
+            left: 50%;
+            top: 20px;
+            transform: translateX(-50%);
+            cursor: pointer;
+            font-size: xx-large;
+            text-transform: uppercase;
+            background-color: brown;
+            color: whitesmoke;
+            border-radius: 5px;
+            border: whitesmoke 3px solid;
+            box-shadow: 0 0 10px 1px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-spin::after {
+            content: '˅';
+            position: fixed;
+            margin-top: 30px;
+            margin-left: -46.5px;
+            color: black;
+            font-weight: bolder;
+        }
+
+        .btn-play::after {
+            content: '˄';
+            position: fixed;
+            margin-top: 40px;
+            line-height: 16px;
+            margin-left: -48px;
+            color: black;
+            background-color: whitesmoke;
+            font-weight: bolder;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="wheel-wrapper"></div>
+    <button class="btn-spin">Spin</button>
+    <button class="btn-play">Play</button>
+
+    <script src="https://unpkg.com/sweetalert2@7.8.2/dist/sweetalert2.js"></script>
+    <script type="module">
+        import { Wheel } from 'https://cdn.jsdelivr.net/npm/spin-wheel@5.0.2/dist/spin-wheel-esm.js'
+        import * as easing from 'https://crazytim.github.io/spin-wheel/scripts/easing.js'
+
+        const btnPlay = document.querySelector('.btn-play')
+        const btnSpin = document.querySelector('.btn-spin')
+        const container = document.querySelector('.wheel-wrapper')
+
+        let props = null, items = null
+        let players = [
+            {
+                label: 'Oliver'
+            },
+            {
+                label: 'Marco'
+            },
+            {
+                label: 'Bryan'
+            },
+            {
+                label: 'Luis'
+            },
+            {
+                label: 'Cristian'
+            },
+            {
+                label: 'JP'
+            },
+            {
+                label: 'Lupita'
+            }
+        ]
+
+        window.addEventListener('click', (e) => {
+            if (e.target === btnPlay) {
+                swal({
+                    title: 'Player´s names?',
+                    text: '(separated by comma´s)',
+                    input: "text",
+                    inputAttributes: {
+                        autocapitalize: "on"
+                    },
+                    imageUrl: './players.gif',
+                    imageWidth: 100,
+                    imageHeight: 100,
+                    imageAlt: 'players.gif',
+                    preConfirm: (names) => {
+                        items = names.split(",").filter(f => !f.includes(undefined, null, false, '')).map(p => { return { label: p } }) || []
+                    }
+                }).then(() => {
+                    players = items.length > 1 ? items : players
+                    props = {
+                        name: 'Roulette',
+                        items: players,
+                        rotationSpeedMax: 1600,
+                        rotationResistance: -110,
+                        lineWidth: 2,
+                        lineColor: '#fff',
+                        borderWidth: 4,
+                        borderColor: 'hsl(350, 20%, 40%)',
+                        isInteractive: false,
+                        radius: 0.84,
+                        pointerAngle: 0,
+                        itemLabelRadius: 0.93,
+                        itemLabelRadiusMax: 0.35,
+                        itemLabelColors: ['hsl(0, 0%, 20%)'],
+                        itemLabelBaselineOffset: -0.06,
+                        itemLabelFont: 'Rubik',
+                        itemLabelColors: ['#fff'],
+                        itemBackgroundColors: ['#ffc93c', '#66bfbf', '#a2d5f2', '#515070', '#43658b', '#ed6663', '#d54062'],
+                    }
+                    window.wheel = new Wheel(container, props)
+                    btnPlay.remove()
+                })
+            }
+
+            if (e.target === btnSpin) {
+                btnSpin.disabled = true
+                const winningItemIndex = Math.floor(Math.random() * props.items.length) + 0
+                console.log("Winner! > ", winningItemIndex, " - ", props.items[winningItemIndex].label)
+                const duration = 4000
+                const revolutions = 4
+                const spinDirection = 1
+                const animation = easing.elasticOut
+                window.wheel.spinToItem(winningItemIndex, duration, true, revolutions, spinDirection, animation)
+                setTimeout(() => {
+                    swal({
+                        text: '˄ Winner ˄',
+                        title: props.items[winningItemIndex].label + '!',
+                        imageUrl: './confetti.gif',
+                        imageWidth: 100,
+                        imageHeight: 100,
+                        imageAlt: 'confetti.gif'
+                    })
+                    btnSpin.disabled = false
+                }, 4100)
+            }
+        })
+    </script>
+</body>
+
+</html>
